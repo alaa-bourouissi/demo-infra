@@ -1,0 +1,31 @@
+name: Déploiement automatique sur EKS Dev
+
+on:
+  push:
+    branches: [ main ]           # ou ta branche principale
+    paths:
+      - 'k8s/dev/**'             # se déclenche seulement si tu modifies k8s/dev/
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    permissions:
+      id-token: write
+      contents: read
+
+    steps:
+      - name: Checkout du code
+        uses: actions/checkout@v4
+
+      - name: Configurer AWS via OIDC
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: arn:aws:iam::545937174274:role/github-actions-eks-deploy   # ← TON ARN ICI !!!
+          aws-region: eu-west-3
+
+      - name: Mettre à jour kubeconfig
+        run: aws eks update-kubeconfig --name demo-cluster --region eu-west-3
+
+      - name: Déployer les manifests sur dev
+        run: kubectl apply -k k8s/dev/
